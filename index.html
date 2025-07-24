@@ -59,6 +59,7 @@
             font-weight: 500;
         }
         .grid-header { background-color: #3B82F6; color: white; }
+        .data-row { cursor: pointer; }
     </style>
 </head>
 <body>
@@ -115,8 +116,8 @@
             <!-- Top Scan Bar -->
             <section class="bg-white p-4 rounded-lg shadow-sm flex items-center space-x-4 text-sm">
                 <label for="scan-here" class="font-bold whitespace-nowrap">Scan Here:</label>
-                <input type="text" id="scan-here" value="F00FF7F9AD483029E0A0A5DAAB8A5578" class="form-field flex-grow">
-                <button class="bg-blue-500 hover:bg-blue-600 text-white p-2 rounded-md"><i class="fa fa-search"></i></button>
+                <input type="text" id="scan-here" placeholder="Enter dummy data here" class="form-field flex-grow">
+                <button id="scan-button" class="bg-blue-500 hover:bg-blue-600 text-white p-2 rounded-md"><i class="fa fa-search"></i></button>
                 <div class="flex items-center space-x-2">
                     <label for="gate-point-main" class="font-bold">Gate Point:</label>
                     <input type="text" id="gate-point-main" value="GATE IN A" class="form-field w-32">
@@ -128,31 +129,34 @@
             </section>
 
             <!-- Main Content Grid -->
-            <div class="grid grid-cols-1 lg:grid-cols-3 gap-4">
+            <div class="grid grid-cols-1 lg:grid-cols-5 gap-4">
                 <!-- Left Column: Measurement -->
-                <section class="bg-white p-4 rounded-lg shadow-sm lg:col-span-1">
+                <section class="bg-white p-4 rounded-lg shadow-sm lg:col-span-2">
                     <h2 class="section-title">Weight Scale Measurement</h2>
                     <div class="flex space-x-4">
                         <img src="https://i.imgur.com/JgPz4KZ.png" alt="Truck Icon" class="w-32 h-32 object-contain">
                         <div class="space-y-2 text-sm w-full">
                             <div class="flex items-center">
                                 <label class="form-label w-24">Chassis No:</label>
-                                <input type="text" value="69H90907" class="form-field w-full">
+                                <input type="text" id="chassis-no" class="form-field w-full" readonly>
                             </div>
                             <div class="flex items-center">
                                 <label class="form-label w-24">Lorry No:</label>
-                                <input type="text" value="51C34832" class="form-field w-full">
+                                <input type="text" id="lorry-no" class="form-field w-full" readonly>
                             </div>
                             <div class="flex items-center">
                                 <label class="form-label w-24">KG:</label>
-                                <input type="text" value="40,123" class="form-field w-full text-right font-bold">
+                                <input type="text" id="kg-display" class="form-field w-full text-right font-bold" readonly>
                             </div>
-                            <button class="w-full bg-blue-600 text-white py-2 rounded-md font-bold hover:bg-blue-700">READ WEIGHT</button>
+                             <div class="flex items-center space-x-2">
+                                <input type="number" id="weight-input" placeholder="Enter weight" class="form-field w-full">
+                                <button id="read-weight-button" class="w-full bg-blue-600 text-white py-2 rounded-md font-bold hover:bg-blue-700 whitespace-nowrap">READ WEIGHT</button>
+                            </div>
                         </div>
                     </div>
                     <div class="mt-2 text-sm">
                         <label class="form-label">Remark:</label>
-                        <textarea rows="4" class="form-field w-full">Lorem ipsum dolor sit amet, consectetuer adipiscing elit. Aenean commodo ligula eget dolor. Aenean massa. Cum sociis natoque penatibus et magnis dis parturient montes, nascetur ridiculus mus.</textarea>
+                        <textarea id="remark" rows="4" class="form-field w-full">Lorem ipsum dolor sit amet, consectetuer adipiscing elit. Aenean commodo ligula eget dolor. Aenean massa. Cum sociis natoque penatibus et magnis dis parturient montes, nascetur ridiculus mus.</textarea>
                         <div class="flex justify-end space-x-2 mt-2">
                             <button class="bg-green-500 text-white px-4 py-1 rounded-md hover:bg-green-600">UPDATE</button>
                             <button class="bg-gray-500 text-white px-4 py-1 rounded-md hover:bg-gray-600">CLEAR</button>
@@ -160,43 +164,74 @@
                     </div>
                 </section>
 
-                <!-- Middle Column: Cargo Info & Monitoring -->
-                <div class="space-y-4 lg:col-span-2">
-                    <section class="bg-white p-4 rounded-lg shadow-sm grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <h2 class="section-title col-span-full">Cargo Information</h2>
-                        <!-- Cargo fields here -->
-                        <div class="space-y-2 text-sm">
-                            <div><label class="form-label">Vessel Call ID:</label><input type="text" value="22HB4S-102" class="form-field w-full"></div>
-                            <div><label class="form-label">Shipping Note No:</label><input type="text" value="BF01/02/03/04" class="form-field w-full"></div>
-                            <div><label class="form-label">Good Receipt No:</label><input type="text" value="GR2401241" class="form-field w-full"></div>
+                <!-- Right Column: Info and Monitoring -->
+                <div class="lg:col-span-3 grid grid-cols-1 lg:grid-cols-2 gap-4">
+                    <!-- Cargo Info -->
+                    <section class="bg-white p-4 rounded-lg shadow-sm">
+                        <h2 class="section-title">Cargo Information</h2>
+                        <div class="grid grid-cols-2 gap-4 text-sm">
+                            <div class="space-y-2">
+                                <div><label class="form-label">Vessel Call ID:</label><input type="text" id="vessel-id" value="22HB4S-102" class="form-field w-full"></div>
+                                <div><label class="form-label">Shipping Note No:</label><input type="text" id="shipping-note-no" value="BF01/02/03/04" class="form-field w-full"></div>
+                                <div><label class="form-label">Good Receipt No:</label><input type="text" id="good-receipt-no" value="GR2401241" class="form-field w-full"></div>
+                            </div>
+                            <div class="space-y-2">
+                                <div><label class="form-label">Bill of Lading No:</label><input type="text" id="bl-no" value="BF01/02/03/04" class="form-field w-full"></div>
+                                <div><label class="form-label">Sub Delivery Order No:</label><input type="text" id="sdo-no" value="SD02401241" class="form-field w-full"></div>
+                            </div>
                         </div>
-                         <div class="space-y-2 text-sm">
-                            <div><label class="form-label">Bill of Lading No:</label><input type="text" value="BF01/02/03/04" class="form-field w-full"></div>
-                            <div><label class="form-label">Sub Delivery Order No:</label><input type="text" value="SD02401241" class="form-field w-full"></div>
+                        <div class="col-span-full space-y-2 text-sm mt-4">
+                             <div><label class="form-label">Commodity Description:</label><input type="text" id="commodity-desc" value="BAO PHAN KALI MIENG DO" class="form-field w-full"></div>
+                             <div><label class="form-label">Shipper/Consignee Name:</label><input type="text" id="shipper-name" value="CNH NGUYEN CONG TY TNHH DINH DUONG A CHAU (VN) TAI BINH DUONG" class="form-field w-full"></div>
+                             <div><label class="form-label">Transporter Name:</label><input type="text" id="transporter-name" value="CONG TY VAN TAI TONG HOP HAM NGHI SAI GON NHA" class="form-field w-full"></div>
                         </div>
-                        <div class="col-span-full space-y-2 text-sm">
-                             <div><label class="form-label">Commodity Description:</label><input type="text" value="BAO PHAN KALI MIENG DO" class="form-field w-full"></div>
-                             <div><label class="form-label">Shipper/Consignee Name:</label><input type="text" value="CNH NGUYEN CONG TY TNHH DINH DUONG A CHAU (VN) TAI BINH DUONG" class="form-field w-full"></div>
-                             <div><label class="form-label">Transporter Name:</label><input type="text" value="CONG TY VAN TAI TONG HOP HAM NGHI SAI GON NHA" class="form-field w-full"></div>
-                        </div>
-                        <div class="col-span-full">
+                        <div class="col-span-full mt-4">
                              <h2 class="section-title">Weight Information</h2>
                              <div class="grid grid-cols-3 gap-4 text-sm">
-                                <div><label class="form-label">1st Weight Scale:</label><input type="text" class="form-field w-full text-right" placeholder="(kg)"></div>
-                                <div><label class="form-label">2nd Weight Scale:</label><input type="text" class="form-field w-full text-right" placeholder="(kg)"></div>
-                                <div><label class="form-label">Cargo Weight:</label><input type="text" class="form-field w-full text-right" placeholder="(kg)"></div>
+                                <div><label class="form-label">1st Weight Scale:</label><input type="text" id="weight-1" class="form-field w-full text-right" placeholder="(kg)"></div>
+                                <div><label class="form-label">2nd Weight Scale:</label><input type="text" id="weight-2" class="form-field w-full text-right" placeholder="(kg)"></div>
+                                <div><label class="form-label">Cargo Weight:</label><input type="text" id="cargo-weight" class="form-field w-full text-right" placeholder="(kg)"></div>
                              </div>
                         </div>
                     </section>
+                    <!-- Monitoring -->
+                    <section class="bg-white p-4 rounded-lg shadow-sm">
+                        <h2 class="section-title">Monitoring</h2>
+                        <div class="space-y-4">
+                            <div class="camera-box h-40">Camera 1 - Front</div>
+                            <div class="camera-box h-40">Camera 2 - Backward</div>
+                        </div>
+                    </section>
                 </div>
-                 <!-- Right Column: Monitoring -->
-                 <section class="bg-white p-4 rounded-lg shadow-sm lg:col-span-1">
-                    <h2 class="section-title">Monitoring</h2>
-                    <div class="space-y-4">
-                        <div class="camera-box h-40">Camera 1 - Front</div>
-                        <div class="camera-box h-40">Camera 2 - Backward</div>
+            </div>
+
+             <!-- Search and Action Bar -->
+            <section class="bg-white p-4 rounded-lg shadow-sm">
+                 <div class="flex flex-wrap gap-4 items-end text-sm">
+                    <!-- Search Fields -->
+                    <div class="flex gap-4 flex-wrap">
+                        <div>
+                            <label class="form-label">Weight Date From:</label>
+                            <input type="text" value="01 April 2022 10:10" class="form-field w-full">
+                        </div>
+                        <div>
+                            <label class="form-label">Weight Date To:</label>
+                            <input type="text" value="30 April 2022 10:10" class="form-field w-full">
+                        </div>
+                        <div>
+                            <label class="form-label">Lorry No:</label>
+                            <input type="text" value="51C34832" class="form-field w-full">
+                        </div>
                     </div>
-                    <div class="mt-4 text-xs">
+                    <!-- Action Buttons -->
+                    <div class="flex gap-2 flex-wrap">
+                        <button class="bg-cyan-500 text-white px-6 py-2 rounded-md font-bold hover:bg-cyan-600"><i class="fa fa-search mr-2"></i>Search</button>
+                        <button id="confirm-button" class="bg-green-600 text-white px-6 py-2 rounded-md font-bold hover:bg-green-700"><i class="fa fa-check mr-2"></i>Confirm</button>
+                        <button class="bg-purple-600 text-white px-6 py-2 rounded-md font-bold hover:bg-purple-700"><i class="fa fa-print mr-2"></i>Print CIR</button>
+                        <button class="bg-red-600 text-white px-6 py-2 rounded-md font-bold hover:bg-red-700"><i class="fa fa-times mr-2"></i>Cancel Job</button>
+                    </div>
+                     <!-- File Info -->
+                    <div class="text-xs ml-auto">
                         <h3 class="font-bold mb-1">File Information:</h3>
                         <ul class="list-disc list-inside">
                             <li>1. Jan32024152900-In-Front</li>
@@ -204,30 +239,6 @@
                             <li>3. Jan32024182015-Out-Front</li>
                             <li>4. Jan32024182015-Out-Back</li>
                         </ul>
-                    </div>
-                </section>
-            </div>
-
-             <!-- Search and Action Bar -->
-            <section class="bg-white p-4 rounded-lg shadow-sm">
-                 <div class="grid grid-cols-1 md:grid-cols-5 gap-4 items-end text-sm">
-                    <div>
-                        <label class="form-label">Weight Date From:</label>
-                        <input type="text" value="01 April 2022 10:10" class="form-field w-full">
-                    </div>
-                    <div>
-                        <label class="form-label">Weight Date To:</label>
-                        <input type="text" value="30 April 2022 10:10" class="form-field w-full">
-                    </div>
-                    <div>
-                        <label class="form-label">Lorry No:</label>
-                        <input type="text" value="51C34832" class="form-field w-full">
-                    </div>
-                    <div class="md:col-span-2 flex justify-start space-x-2 pt-4">
-                        <button class="bg-cyan-500 text-white px-6 py-2 rounded-md font-bold hover:bg-cyan-600"><i class="fa fa-search mr-2"></i>Search</button>
-                        <button class="bg-green-600 text-white px-6 py-2 rounded-md font-bold hover:bg-green-700"><i class="fa fa-check mr-2"></i>Confirm</button>
-                        <button class="bg-purple-600 text-white px-6 py-2 rounded-md font-bold hover:bg-purple-700"><i class="fa fa-print mr-2"></i>Print CIR</button>
-                        <button class="bg-red-600 text-white px-6 py-2 rounded-md font-bold hover:bg-red-700"><i class="fa fa-times mr-2"></i>Cancel Job</button>
                     </div>
                 </div>
             </section>
@@ -244,14 +255,13 @@
                             <th class="p-3">Print CIR</th><th class="p-3">Remark</th>
                         </tr>
                     </thead>
-                    <tbody class="divide-y">
-                        <tr class="hover:bg-gray-50">
+                    <tbody id="data-grid-body" class="divide-y">
+                        <tr class="hover:bg-gray-50 data-row">
                             <td class="p-3">Import</td><td class="p-3">51C34832</td><td class="p-3">TRN20907032063018305357757</td><td class="p-3">Acaerem ipsum dor sit amet</td><td class="p-3">Acaerem ipsum dor sit amet</td>
                             <td class="p-3">Direct</td><td class="p-3">BF01/02/03/04</td><td class="p-3">SD02401241</td><td class="p-3">24/01/2024 10:45</td>
                             <td class="p-3">24/01/2024 13:45</td><td class="p-3 text-right">5000</td><td class="p-3 text-right">35000</td><td class="p-3 text-right">30000</td>
                             <td class="p-3">Yes</td><td class="p-3">Lorem ipsum dolor sit amet</td>
                         </tr>
-                        <!-- Add more sample rows as needed -->
                     </tbody>
                 </table>
             </section>
@@ -259,7 +269,7 @@
     </div>
 
     <script>
-        // --- Navigation and Login Logic ---
+        // --- Login Logic ---
         const loginForm = document.getElementById('login-form');
         const messageBox = document.getElementById('message-box');
         const loginScreen = document.getElementById('login-screen');
@@ -267,42 +277,113 @@
         const displayUserId = document.getElementById('display-user-id');
 
         loginForm.addEventListener('submit', function(event) {
-            event.preventDefault(); // Prevent form submission
-
+            event.preventDefault();
             const userId = document.getElementById('user-id').value.trim();
             const password = document.getElementById('password').value.trim();
             const gatePoint = document.getElementById('gate-point').value;
             const laneNo = document.getElementById('lane-no').value;
 
-            let isValid = true;
-            let message = '';
-
-            // --- Validation Checks ---
-            if (userId !== 'MOSTADMIN' || password !== '909090') {
-                isValid = false;
-                message = 'Invalid User ID or Password. Please try again.';
-            } else if (gatePoint === '') {
-                isValid = false;
-                message = 'Please select a Gate Point.';
-            } else if (laneNo === '') {
-                isValid = false;
-                message = 'Please select a Lane Number.';
-            }
-
-            // --- Display Feedback or Navigate ---
-            if (isValid) {
+            if (userId === 'MOSTADMIN' && password === '909090' && gatePoint && laneNo) {
                 messageBox.innerHTML = `<p class="text-green-400">Login Successful! Navigating...</p>`;
-                // Simulate a short delay before navigation
                 setTimeout(() => {
-                    loginScreen.classList.add('hidden'); // Hide login screen
-                    weighbridgeScreen.classList.remove('hidden'); // Show main app screen
-                    document.body.classList.remove('login-body'); // Change body background
-                    displayUserId.textContent = userId; // Show user ID in header
+                    loginScreen.classList.add('hidden');
+                    weighbridgeScreen.classList.remove('hidden');
+                    document.body.classList.remove('login-body');
+                    displayUserId.textContent = userId;
                 }, 1000);
             } else {
+                let message = 'Invalid credentials or missing fields.';
+                if(userId !== 'MOSTADMIN' || password !== '909090') message = 'Invalid User ID or Password.';
+                else if (!gatePoint) message = 'Please select a Gate Point.';
+                else if (!laneNo) message = 'Please select a Lane Number.';
                 messageBox.innerHTML = `<p class="text-red-400">${message}</p>`;
             }
         });
+
+        // --- Weighbridge Functionality ---
+        const scanButton = document.getElementById('scan-button');
+        const readWeightButton = document.getElementById('read-weight-button');
+        const confirmButton = document.getElementById('confirm-button');
+        const dataGridBody = document.getElementById('data-grid-body');
+
+        // Helper function to generate random alphanumeric string
+        const generateRandomString = (length) => {
+            const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+            let result = '';
+            for (let i = 0; i < length; i++) {
+                result += chars.charAt(Math.floor(Math.random() * chars.length));
+            }
+            return result;
+        };
+        
+        // 1. Scan button functionality
+        scanButton.addEventListener('click', () => {
+            const scanInput = document.getElementById('scan-here').value;
+            if (!scanInput) {
+                alert('Please enter data in the "Scan Here" field first.');
+                return;
+            }
+            document.getElementById('chassis-no').value = generateRandomString(8);
+            document.getElementById('lorry-no').value = generateRandomString(2) + 'C' + (Math.floor(Math.random() * 9000) + 1000);
+        });
+
+        // 2. Read weight functionality
+        readWeightButton.addEventListener('click', () => {
+            const weightInput = document.getElementById('weight-input').value;
+            if (weightInput) {
+                document.getElementById('kg-display').value = parseFloat(weightInput).toLocaleString();
+            } else {
+                alert('Please enter a weight value.');
+            }
+        });
+
+        // 3. Confirm button functionality
+        confirmButton.addEventListener('click', () => {
+            // Gather data from form fields
+            const lorryNo = document.getElementById('lorry-no').value;
+            if (!lorryNo) {
+                alert('Please scan a vehicle first to generate data.');
+                return;
+            }
+            
+            const firstWeight = Math.floor(Math.random() * 1000) + 4000; // Random weight between 4000-5000
+            const secondWeight = Math.floor(Math.random() * 5000) + 30000; // Random weight between 30000-35000
+            const netWeight = secondWeight - firstWeight;
+            
+            const newRow = document.createElement('tr');
+            newRow.className = 'hover:bg-gray-50 data-row';
+            newRow.innerHTML = `
+                <td class="p-3">Export</td>
+                <td class="p-3">${lorryNo}</td>
+                <td class="p-3">TRN${Date.now()}</td>
+                <td class="p-3">${document.getElementById('shipper-name').value.substring(0,25)}</td>
+                <td class="p-3">${document.getElementById('commodity-desc').value.substring(0,25)}</td>
+                <td class="p-3">Direct</td>
+                <td class="p-3">${document.getElementById('bl-no').value}</td>
+                <td class="p-3">${document.getElementById('sdo-no').value}</td>
+                <td class="p-3">${new Date().toLocaleString()}</td>
+                <td class="p-3">${new Date(Date.now() + 3 * 60 * 60 * 1000).toLocaleString()}</td>
+                <td class="p-3 text-right">${firstWeight.toLocaleString()}</td>
+                <td class="p-3 text-right">${secondWeight.toLocaleString()}</td>
+                <td class="p-3 text-right">${netWeight.toLocaleString()}</td>
+                <td class="p-3">No</td>
+                <td class="p-3">${document.getElementById('remark').value.substring(0,30)}</td>
+            `;
+            dataGridBody.appendChild(newRow);
+        });
+        
+        // 4. Data grid row click functionality
+        dataGridBody.addEventListener('click', (event) => {
+            const row = event.target.closest('.data-row');
+            if (!row) return;
+
+            const cells = row.cells;
+            // Cell indices: 10 = 1st Weight, 11 = 2nd Weight, 12 = Net Cargo Weight
+            document.getElementById('weight-1').value = cells[10].textContent;
+            document.getElementById('weight-2').value = cells[11].textContent;
+            document.getElementById('cargo-weight').value = cells[12].textContent;
+        });
+
     </script>
 
 </body>
