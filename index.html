@@ -60,6 +60,14 @@
         }
         .grid-header { background-color: #3B82F6; color: white; }
         .data-row { cursor: pointer; }
+        .selected-row { background-color: #D6EAF8 !important; }
+        
+        /* Style for date/time input to look consistent */
+        input[type="datetime-local"]::-webkit-calendar-picker-indicator {
+            cursor: pointer;
+            opacity: 0.6;
+            filter: invert(0.5);
+        }
     </style>
 </head>
 <body>
@@ -156,10 +164,10 @@
                     </div>
                     <div class="mt-2 text-sm">
                         <label class="form-label">Remark:</label>
-                        <textarea id="remark" rows="4" class="form-field w-full">Lorem ipsum dolor sit amet, consectetuer adipiscing elit. Aenean commodo ligula eget dolor. Aenean massa. Cum sociis natoque penatibus et magnis dis parturient montes, nascetur ridiculus mus.</textarea>
+                        <textarea id="remark" rows="4" class="form-field w-full"></textarea>
                         <div class="flex justify-end space-x-2 mt-2">
-                            <button class="bg-green-500 text-white px-4 py-1 rounded-md hover:bg-green-600">UPDATE</button>
-                            <button class="bg-gray-500 text-white px-4 py-1 rounded-md hover:bg-gray-600">CLEAR</button>
+                            <button id="update-button" class="bg-green-500 text-white px-4 py-1 rounded-md hover:bg-green-600">UPDATE</button>
+                            <button id="clear-button" class="bg-gray-500 text-white px-4 py-1 rounded-md hover:bg-gray-600">CLEAR</button>
                         </div>
                     </div>
                 </section>
@@ -198,8 +206,17 @@
                     <section class="bg-white p-4 rounded-lg shadow-sm">
                         <h2 class="section-title">Monitoring</h2>
                         <div class="space-y-4">
-                            <div class="camera-box h-40">Camera 1 - Front</div>
-                            <div class="camera-box h-40">Camera 2 - Backward</div>
+                            <div class="camera-box h-32">Camera 1 - Front</div>
+                            <div class="camera-box h-32">Camera 2 - Backward</div>
+                        </div>
+                        <div class="mt-4 text-xs bg-gray-50 p-3 rounded-lg">
+                            <h3 class="font-bold mb-2 text-gray-700">File Information:</h3>
+                            <ul class="space-y-1 text-gray-600">
+                                <li>1. Jan32024152900-In-Front</li>
+                                <li>2. Jan32024152900-In-Back</li>
+                                <li>3. Jan32024182015-Out-Front</li>
+                                <li>4. Jan32024182015-Out-Back</li>
+                            </ul>
                         </div>
                     </section>
                 </div>
@@ -212,11 +229,11 @@
                     <div class="flex gap-4 flex-wrap">
                         <div>
                             <label class="form-label">Weight Date From:</label>
-                            <input type="text" value="01 April 2022 10:10" class="form-field w-full">
+                            <input type="datetime-local" class="form-field w-full">
                         </div>
                         <div>
                             <label class="form-label">Weight Date To:</label>
-                            <input type="text" value="30 April 2022 10:10" class="form-field w-full">
+                            <input type="datetime-local" class="form-field w-full">
                         </div>
                         <div>
                             <label class="form-label">Lorry No:</label>
@@ -224,21 +241,11 @@
                         </div>
                     </div>
                     <!-- Action Buttons -->
-                    <div class="flex gap-2 flex-wrap">
+                    <div class="flex gap-2 flex-wrap ml-auto">
                         <button class="bg-cyan-500 text-white px-6 py-2 rounded-md font-bold hover:bg-cyan-600"><i class="fa fa-search mr-2"></i>Search</button>
                         <button id="confirm-button" class="bg-green-600 text-white px-6 py-2 rounded-md font-bold hover:bg-green-700"><i class="fa fa-check mr-2"></i>Confirm</button>
                         <button class="bg-purple-600 text-white px-6 py-2 rounded-md font-bold hover:bg-purple-700"><i class="fa fa-print mr-2"></i>Print CIR</button>
                         <button class="bg-red-600 text-white px-6 py-2 rounded-md font-bold hover:bg-red-700"><i class="fa fa-times mr-2"></i>Cancel Job</button>
-                    </div>
-                     <!-- File Info -->
-                    <div class="text-xs ml-auto">
-                        <h3 class="font-bold mb-1">File Information:</h3>
-                        <ul class="list-disc list-inside">
-                            <li>1. Jan32024152900-In-Front</li>
-                            <li>2. Jan32024152900-In-Back</li>
-                            <li>3. Jan32024182015-Out-Front</li>
-                            <li>4. Jan32024182015-Out-Back</li>
-                        </ul>
                     </div>
                 </div>
             </section>
@@ -305,6 +312,11 @@
         const readWeightButton = document.getElementById('read-weight-button');
         const confirmButton = document.getElementById('confirm-button');
         const dataGridBody = document.getElementById('data-grid-body');
+        const updateButton = document.getElementById('update-button');
+        const clearButton = document.getElementById('clear-button');
+        const remarkTextArea = document.getElementById('remark');
+
+        let selectedRow = null; // Variable to keep track of the selected row
 
         // Helper function to generate random alphanumeric string
         const generateRandomString = (length) => {
@@ -316,7 +328,7 @@
             return result;
         };
         
-        // 1. Scan button functionality
+        // Scan button functionality
         scanButton.addEventListener('click', () => {
             const scanInput = document.getElementById('scan-here').value;
             if (!scanInput) {
@@ -327,7 +339,7 @@
             document.getElementById('lorry-no').value = generateRandomString(2) + 'C' + (Math.floor(Math.random() * 9000) + 1000);
         });
 
-        // 2. Read weight functionality
+        // Read weight functionality
         readWeightButton.addEventListener('click', () => {
             const weightInput = document.getElementById('weight-input').value;
             if (weightInput) {
@@ -337,17 +349,16 @@
             }
         });
 
-        // 3. Confirm button functionality
+        // Confirm button functionality
         confirmButton.addEventListener('click', () => {
-            // Gather data from form fields
             const lorryNo = document.getElementById('lorry-no').value;
             if (!lorryNo) {
                 alert('Please scan a vehicle first to generate data.');
                 return;
             }
             
-            const firstWeight = Math.floor(Math.random() * 1000) + 4000; // Random weight between 4000-5000
-            const secondWeight = Math.floor(Math.random() * 5000) + 30000; // Random weight between 30000-35000
+            const firstWeight = Math.floor(Math.random() * 1000) + 4000;
+            const secondWeight = Math.floor(Math.random() * 5000) + 30000;
             const netWeight = secondWeight - firstWeight;
             
             const newRow = document.createElement('tr');
@@ -367,21 +378,46 @@
                 <td class="p-3 text-right">${secondWeight.toLocaleString()}</td>
                 <td class="p-3 text-right">${netWeight.toLocaleString()}</td>
                 <td class="p-3">No</td>
-                <td class="p-3">${document.getElementById('remark').value.substring(0,30)}</td>
+                <td class="p-3">${remarkTextArea.value.substring(0,30)}</td>
             `;
             dataGridBody.appendChild(newRow);
         });
         
-        // 4. Data grid row click functionality
+        // Data grid row click functionality
         dataGridBody.addEventListener('click', (event) => {
             const row = event.target.closest('.data-row');
             if (!row) return;
 
+            // Remove selection from previously selected row
+            if (selectedRow) {
+                selectedRow.classList.remove('selected-row');
+            }
+            // Add selection to the new row
+            row.classList.add('selected-row');
+            selectedRow = row;
+
             const cells = row.cells;
-            // Cell indices: 10 = 1st Weight, 11 = 2nd Weight, 12 = Net Cargo Weight
+            // Cell indices: 10 = 1st Weight, 11 = 2nd Weight, 12 = Net Cargo Weight, 14 = Remark
             document.getElementById('weight-1').value = cells[10].textContent;
             document.getElementById('weight-2').value = cells[11].textContent;
             document.getElementById('cargo-weight').value = cells[12].textContent;
+            remarkTextArea.value = cells[14].textContent;
+        });
+
+        // Update button functionality
+        updateButton.addEventListener('click', () => {
+            if (!selectedRow) {
+                alert('Please select a row from the grid to update.');
+                return;
+            }
+            // Update the remark cell in the selected row
+            selectedRow.cells[14].textContent = remarkTextArea.value;
+            alert('Remark updated successfully!');
+        });
+
+        // Clear button functionality
+        clearButton.addEventListener('click', () => {
+            remarkTextArea.value = '';
         });
 
     </script>
