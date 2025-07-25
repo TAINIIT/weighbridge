@@ -31,7 +31,7 @@
             background-size: 1.5em 1.5em;
             -webkit-appearance: none; -moz-appearance: none; appearance: none;
         }
-        #message-box { min-height: 24px; transition: all 0.3s ease-in-out; }
+        #message-box, #search-message-box { min-height: 24px; transition: all 0.3s ease-in-out; }
 
         /* --- Weighbridge Screen Styles --- */
         .weighbridge-header { background-color: #3B82F6; }
@@ -233,26 +233,27 @@
                     <!-- Search Fields -->
                     <div class="flex gap-4 flex-wrap">
                         <div>
-                            <label class="form-label">Weight Date From:</label>
-                            <input type="datetime-local" class="form-field w-full">
+                            <label for="search-date-from" class="form-label">Weight Date From:</label>
+                            <input id="search-date-from" type="datetime-local" class="form-field w-full">
                         </div>
                         <div>
-                            <label class="form-label">Weight Date To:</label>
-                            <input type="datetime-local" class="form-field w-full">
+                            <label for="search-date-to" class="form-label">Weight Date To:</label>
+                            <input id="search-date-to" type="datetime-local" class="form-field w-full">
                         </div>
                         <div>
-                            <label class="form-label">Lorry No:</label>
-                            <input type="text" value="51C34832" class="form-field w-full">
+                            <label for="search-lorry-no" class="form-label">Lorry No:</label>
+                            <input id="search-lorry-no" type="text" placeholder="Enter Lorry No." class="form-field w-full">
                         </div>
                     </div>
                     <!-- Action Buttons -->
                     <div class="flex gap-2 flex-wrap ml-auto">
-                        <button class="bg-cyan-500 text-white px-6 py-2 rounded-md font-bold hover:bg-cyan-600"><i class="fa fa-search mr-2"></i>Search</button>
+                        <button id="search-button" class="bg-cyan-500 text-white px-6 py-2 rounded-md font-bold hover:bg-cyan-600"><i class="fa fa-search mr-2"></i>Search</button>
                         <button id="confirm-button" class="bg-green-600 text-white px-6 py-2 rounded-md font-bold hover:bg-green-700"><i class="fa fa-check mr-2"></i>Confirm</button>
                         <button class="bg-purple-600 text-white px-6 py-2 rounded-md font-bold hover:bg-purple-700"><i class="fa fa-print mr-2"></i>Print CIR</button>
-                        <button class="bg-red-600 text-white px-6 py-2 rounded-md font-bold hover:bg-red-700"><i class="fa fa-times mr-2"></i>Cancel Job</button>
+                        <button id="cancel-job-button" class="bg-red-600 text-white px-6 py-2 rounded-md font-bold hover:bg-red-700"><i class="fa fa-times mr-2"></i>Cancel Job</button>
                     </div>
-                </div>
+                 </div>
+                 <div id="search-message-box" class="text-center font-medium mt-2"></div>
             </section>
 
             <!-- Data Grid -->
@@ -280,6 +281,23 @@
             </section>
         </main>
     </div>
+    
+    <!-- Custom Modal -->
+    <div id="custom-modal" class="hidden fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
+        <div class="bg-white rounded-lg shadow-xl w-full max-w-md transform transition-all duration-300 ease-out scale-95 opacity-0">
+            <div id="modal-header" class="p-4 border-b rounded-t-lg flex justify-between items-center">
+                <h3 id="modal-title" class="text-xl font-bold">Notification</h3>
+                <button id="modal-close-button" class="text-gray-400 hover:text-gray-600 text-2xl leading-none">&times;</button>
+            </div>
+            <div class="p-6">
+                <p id="modal-message" class="text-gray-700"></p>
+            </div>
+            <div class="p-4 bg-gray-50 rounded-b-lg text-right">
+                 <button id="modal-ok-button" class="bg-blue-500 text-white px-6 py-2 rounded-md hover:bg-blue-600">OK</button>
+            </div>
+        </div>
+    </div>
+
 
     <script>
         // --- Login Logic ---
@@ -305,11 +323,10 @@
                     displayUserId.textContent = userId;
                     // Initial data load and render
                     generateSampleData();
-                    renderTablePage(currentPage);
+                    renderTablePage(currentPage, allData);
                 }, 1000);
             } else {
                 let message = 'Invalid credentials or missing fields.';
-                // FIX: Added curly braces for robustness
                 if (userId !== 'MOSTADMIN' || password !== '909090') {
                     message = 'Invalid User ID or Password.';
                 } else if (!gatePoint) {
@@ -322,7 +339,7 @@
         });
 
         // --- Weighbridge Functionality ---
-        const scanButton = document.getElementById('scan-button');
+        const topScanButton = document.getElementById('scan-button');
         const readWeightButton = document.getElementById('read-weight-button');
         const confirmButton = document.getElementById('confirm-button');
         const dataGridBody = document.getElementById('data-grid-body');
@@ -332,11 +349,61 @@
         const prevPageButton = document.getElementById('prev-page');
         const nextPageButton = document.getElementById('next-page');
         const pageInfo = document.getElementById('page-info');
+        const searchButton = document.getElementById('search-button');
+        const cancelJobButton = document.getElementById('cancel-job-button');
+        const searchMessageBox = document.getElementById('search-message-box');
+
+        // Modal Elements
+        const customModal = document.getElementById('custom-modal');
+        const modalContent = customModal.querySelector('div');
+        const modalHeader = document.getElementById('modal-header');
+        const modalTitle = document.getElementById('modal-title');
+        const modalMessage = document.getElementById('modal-message');
+        const modalCloseButton = document.getElementById('modal-close-button');
+        const modalOkButton = document.getElementById('modal-ok-button');
 
         let selectedRow = null; 
         let allData = [];
+        let currentViewData = [];
         let currentPage = 1;
         const rowsPerPage = 50;
+
+        // --- Modal Logic ---
+        const showModal = (message, type = 'info') => {
+            modalMessage.textContent = message;
+            // Reset header color
+            modalHeader.classList.remove('bg-red-500', 'bg-green-500', 'text-white');
+            modalTitle.textContent = "Notification";
+
+            if (type === 'error') {
+                modalHeader.classList.add('bg-red-500', 'text-white');
+                modalTitle.textContent = "Error";
+            } else if (type === 'success') {
+                modalHeader.classList.add('bg-green-500', 'text-white');
+                modalTitle.textContent = "Success";
+            }
+            
+            customModal.classList.remove('hidden');
+            setTimeout(() => {
+                modalContent.classList.remove('scale-95', 'opacity-0');
+            }, 10); // Start transition
+        };
+
+        const hideModal = () => {
+            modalContent.classList.add('scale-95', 'opacity-0');
+            setTimeout(() => {
+                customModal.classList.add('hidden');
+            }, 300); // Wait for transition to finish
+        };
+        
+        modalCloseButton.addEventListener('click', hideModal);
+        modalOkButton.addEventListener('click', hideModal);
+        customModal.addEventListener('click', (event) => {
+            if (event.target === customModal) {
+                hideModal();
+            }
+        });
+
 
         // Helper function to generate random alphanumeric string
         const generateRandomString = (length) => {
@@ -352,19 +419,15 @@
         const generateSampleData = () => {
             allData = []; // Clear existing data
             for (let i = 0; i < 100; i++) {
-                const hasFirstWeight = Math.random() > 0.2; // 80% chance of having 1st weight
-                const hasSecondWeight = hasFirstWeight && Math.random() > 0.5; // 50% chance of 2nd if 1st exists
+                const hasSecondWeight = Math.random() > 0.5; 
 
-                let firstWeight = '';
+                let firstWeight = Math.floor(Math.random() * 1000) + 4000;
                 let secondWeight = '';
                 let netWeight = '';
 
-                if (hasFirstWeight) {
-                    firstWeight = Math.floor(Math.random() * 1000) + 4000;
-                    if (hasSecondWeight) {
-                        secondWeight = Math.floor(Math.random() * 5000) + 30000;
-                        netWeight = secondWeight - firstWeight;
-                    }
+                if (hasSecondWeight) {
+                    secondWeight = Math.floor(Math.random() * 5000) + 30000;
+                    netWeight = Math.abs(secondWeight - firstWeight);
                 }
 
                 allData.push({
@@ -376,23 +439,26 @@
                     dMode: 'Direct',
                     snNo: 'SN' + generateRandomString(8),
                     sdo: 'SDO' + generateRandomString(8),
-                    date1: new Date(Date.now() - i * 3600000).toLocaleString(),
-                    date2: hasSecondWeight ? new Date(Date.now() - (i-1) * 3600000).toLocaleString() : '',
+                    date1: new Date(Date.now() - i * 3600000),
+                    date2: hasSecondWeight ? new Date(Date.now() - (i-1) * 3600000) : '',
                     weight1: firstWeight,
                     weight2: secondWeight,
                     netWeight: netWeight,
                     printCIR: 'No',
-                    remark: 'Sample remark ' + i
+                    remark: 'Sample remark ' + i,
+                    confirmed: true // Assume all generated data is confirmed for search purposes
                 });
             }
+            currentViewData = allData;
         };
 
         // Render a specific page of the table
-        const renderTablePage = (page) => {
+        const renderTablePage = (page, data) => {
             dataGridBody.innerHTML = ''; // Clear table
+            currentViewData = data;
             const start = (page - 1) * rowsPerPage;
             const end = start + rowsPerPage;
-            const paginatedItems = allData.slice(start, end);
+            const paginatedItems = data.slice(start, end);
 
             paginatedItems.forEach(item => {
                 const row = document.createElement('tr');
@@ -406,8 +472,8 @@
                     <td class="p-3">${item.dMode}</td>
                     <td class="p-3">${item.snNo}</td>
                     <td class="p-3">${item.sdo}</td>
-                    <td class="p-3">${item.date1}</td>
-                    <td class="p-3">${item.date2}</td>
+                    <td class="p-3">${item.date1.toLocaleString()}</td>
+                    <td class="p-3">${item.date2 ? item.date2.toLocaleString() : ''}</td>
                     <td class="p-3 text-right">${item.weight1 ? item.weight1.toLocaleString() : ''}</td>
                     <td class="p-3 text-right">${item.weight2 ? item.weight2.toLocaleString() : ''}</td>
                     <td class="p-3 text-right">${item.netWeight ? item.netWeight.toLocaleString() : ''}</td>
@@ -417,7 +483,7 @@
                 dataGridBody.appendChild(row);
             });
 
-            const totalPages = Math.ceil(allData.length / rowsPerPage);
+            const totalPages = Math.ceil(data.length / rowsPerPage);
             pageInfo.textContent = `Page ${page} of ${totalPages}`;
             prevPageButton.disabled = page === 1;
             nextPageButton.disabled = page === totalPages;
@@ -427,22 +493,22 @@
         // Pagination button listeners
         prevPageButton.addEventListener('click', () => {
             if (currentPage > 1) {
-                renderTablePage(currentPage - 1);
+                renderTablePage(currentPage - 1, currentViewData);
             }
         });
 
         nextPageButton.addEventListener('click', () => {
-            const totalPages = Math.ceil(allData.length / rowsPerPage);
+            const totalPages = Math.ceil(currentViewData.length / rowsPerPage);
             if (currentPage < totalPages) {
-                renderTablePage(currentPage + 1);
+                renderTablePage(currentPage + 1, currentViewData);
             }
         });
 
         // Scan button functionality
-        scanButton.addEventListener('click', () => {
+        topScanButton.addEventListener('click', () => {
             const scanInput = document.getElementById('scan-here').value;
             if (!scanInput) {
-                console.error('Please enter data in the "Scan Here" field first.');
+                showModal('Please enter data in the "Scan Here" field first.', 'error');
                 return;
             }
             document.getElementById('chassis-no').value = generateRandomString(8);
@@ -455,7 +521,7 @@
             if (weightInput) {
                 document.getElementById('kg-display').value = parseFloat(weightInput).toLocaleString();
             } else {
-                console.error('Please enter a weight value.');
+                showModal('Please enter a weight value.', 'error');
             }
         });
 
@@ -463,33 +529,36 @@
         confirmButton.addEventListener('click', () => {
             const lorryNo = document.getElementById('lorry-no').value;
             if (!lorryNo) {
-                console.error('Please scan a vehicle first to generate data.');
+                showModal('Please scan a vehicle first to generate data.', 'error');
                 return;
             }
             
-            const firstWeight = Math.floor(Math.random() * 1000) + 4000;
-            const secondWeight = Math.floor(Math.random() * 5000) + 30000;
-            const netWeight = secondWeight - firstWeight;
-            
+            const firstWeight = document.getElementById('kg-display').value.replace(/,/g, '');
+            if (!firstWeight) {
+                showModal('Please read a weight first.', 'error');
+                return;
+            }
+
             const newItem = {
                 category: 'Export',
                 truckNo: lorryNo,
                 transactionNo: `TRN${Date.now()}`,
-                shipper: document.getElementById('shipper-name').value.substring(0,25),
-                commodity: document.getElementById('commodity-desc').value.substring(0,25),
+                shipper: document.getElementById('shipper-name').value,
+                commodity: document.getElementById('commodity-desc').value,
                 dMode: 'Direct',
                 snNo: document.getElementById('bl-no').value,
                 sdo: document.getElementById('sdo-no').value,
-                date1: new Date().toLocaleString(),
-                date2: new Date(Date.now() + 3 * 60 * 60 * 1000).toLocaleString(),
-                weight1: firstWeight,
-                weight2: secondWeight,
-                netWeight: netWeight,
+                date1: new Date(),
+                date2: '',
+                weight1: parseFloat(firstWeight),
+                weight2: '',
+                netWeight: '',
                 printCIR: 'No',
-                remark: remarkTextArea.value.substring(0,30)
+                remark: remarkTextArea.value,
+                confirmed: true
             };
-            allData.unshift(newItem); // Add to the beginning of the array
-            renderTablePage(1); // Go to the first page to see the new item
+            allData.unshift(newItem);
+            renderTablePage(1, allData);
         });
         
         // Data grid row click functionality
@@ -513,7 +582,7 @@
         // Update button functionality
         updateButton.addEventListener('click', () => {
             if (!selectedRow) {
-                console.error('Please select a row from the grid to update.');
+                showModal('Please select a row from the grid to update.', 'error');
                 return;
             }
             const transactionNo = selectedRow.cells[2].textContent;
@@ -522,13 +591,62 @@
             if (dataIndex !== -1) {
                 allData[dataIndex].remark = remarkTextArea.value;
                 selectedRow.cells[14].textContent = remarkTextArea.value;
-                console.log('Remark updated successfully!');
+                showModal('Remark updated successfully!', 'success');
             }
         });
 
         // Clear button functionality
         clearButton.addEventListener('click', () => {
             remarkTextArea.value = '';
+        });
+
+        // Cancel Job button functionality
+        cancelJobButton.addEventListener('click', () => {
+            if (!selectedRow) {
+                showModal('Please select a transaction to cancel.', 'error');
+                return;
+            }
+            const secondWeight = selectedRow.cells[11].textContent;
+            if (secondWeight.trim() !== '') {
+                showModal('Unable to cancel job with a 2nd weight.', 'error');
+            } else {
+                showModal('The Transaction is cancelled successfully.', 'success');
+                const transactionNo = selectedRow.cells[2].textContent;
+                allData = allData.filter(item => item.transactionNo !== transactionNo);
+                renderTablePage(currentPage, allData);
+                selectedRow = null;
+            }
+        });
+        
+        // Search button functionality
+        searchButton.addEventListener('click', () => {
+            const dateFrom = document.getElementById('search-date-from').value;
+            const dateTo = document.getElementById('search-date-to').value;
+            const lorryNo = document.getElementById('search-lorry-no').value.trim().toLowerCase();
+
+            const from = dateFrom ? new Date(dateFrom) : null;
+            const to = dateTo ? new Date(dateTo) : null;
+
+            const filteredData = allData.filter(item => {
+                if (!item.confirmed) return false;
+
+                const itemDate = item.date1;
+                let dateMatch = true;
+                if (from && to) {
+                    dateMatch = itemDate >= from && itemDate <= to;
+                } else if (from) {
+                    dateMatch = itemDate >= from;
+                } else if (to) {
+                    dateMatch = itemDate <= to;
+                }
+
+                const lorryMatch = lorryNo ? item.truckNo.toLowerCase().includes(lorryNo) : true;
+
+                return dateMatch && lorryMatch;
+            });
+            
+            renderTablePage(1, filteredData);
+            searchMessageBox.innerHTML = `<p class="text-blue-600">${filteredData.length} records found.</p>`;
         });
 
     </script>
