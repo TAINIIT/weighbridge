@@ -292,8 +292,12 @@
             <div class="p-6">
                 <p id="modal-message" class="text-gray-700"></p>
             </div>
-            <div class="p-4 bg-gray-50 rounded-b-lg text-right">
+            <div id="modal-ok-buttons" class="p-4 bg-gray-50 rounded-b-lg text-right">
                  <button id="modal-ok-button" class="bg-blue-500 text-white px-6 py-2 rounded-md hover:bg-blue-600">OK</button>
+            </div>
+            <div id="modal-confirm-buttons" class="hidden p-4 bg-gray-50 rounded-b-lg text-right space-x-2">
+                <button id="modal-yes-button" class="bg-red-600 text-white px-6 py-2 rounded-md hover:bg-red-700">Yes</button>
+                <button id="modal-no-button" class="bg-gray-300 text-gray-800 px-6 py-2 rounded-md hover:bg-gray-400">No</button>
             </div>
         </div>
     </div>
@@ -324,6 +328,7 @@
                     // Initial data load and render
                     generateSampleData();
                     renderTablePage(currentPage, allData);
+                    setDefaultDates();
                 }, 1000);
             } else {
                 let message = 'Invalid credentials or missing fields.';
@@ -361,18 +366,25 @@
         const modalMessage = document.getElementById('modal-message');
         const modalCloseButton = document.getElementById('modal-close-button');
         const modalOkButton = document.getElementById('modal-ok-button');
+        const modalOkButtons = document.getElementById('modal-ok-buttons');
+        const modalConfirmButtons = document.getElementById('modal-confirm-buttons');
+        const modalYesButton = document.getElementById('modal-yes-button');
+        const modalNoButton = document.getElementById('modal-no-button');
 
         let selectedRow = null; 
         let allData = [];
         let currentViewData = [];
         let currentPage = 1;
         const rowsPerPage = 50;
+        let confirmCallback = null;
 
         // --- Modal Logic ---
-        const showModal = (message, type = 'info') => {
+        const showModal = (message, type = 'info', onConfirm = null) => {
             modalMessage.textContent = message;
+            confirmCallback = onConfirm;
+            
             // Reset header color
-            modalHeader.classList.remove('bg-red-500', 'bg-green-500', 'text-white');
+            modalHeader.classList.remove('bg-red-500', 'bg-green-500', 'bg-yellow-500', 'text-white');
             modalTitle.textContent = "Notification";
 
             if (type === 'error') {
@@ -381,6 +393,17 @@
             } else if (type === 'success') {
                 modalHeader.classList.add('bg-green-500', 'text-white');
                 modalTitle.textContent = "Success";
+            } else if (type === 'confirm') {
+                modalHeader.classList.add('bg-yellow-500', 'text-white');
+                modalTitle.textContent = "Confirmation";
+            }
+            
+            if (type === 'confirm') {
+                modalOkButtons.classList.add('hidden');
+                modalConfirmButtons.classList.remove('hidden');
+            } else {
+                modalOkButtons.classList.remove('hidden');
+                modalConfirmButtons.classList.add('hidden');
             }
             
             customModal.classList.remove('hidden');
@@ -393,11 +416,20 @@
             modalContent.classList.add('scale-95', 'opacity-0');
             setTimeout(() => {
                 customModal.classList.add('hidden');
+                confirmCallback = null; // Reset callback
             }, 300); // Wait for transition to finish
         };
         
         modalCloseButton.addEventListener('click', hideModal);
         modalOkButton.addEventListener('click', hideModal);
+        modalNoButton.addEventListener('click', hideModal);
+        modalYesButton.addEventListener('click', () => {
+            if (typeof confirmCallback === 'function') {
+                confirmCallback();
+            }
+            hideModal();
+        });
+
         customModal.addEventListener('click', (event) => {
             if (event.target === customModal) {
                 hideModal();
@@ -439,8 +471,8 @@
                     dMode: 'Direct',
                     snNo: 'SN' + generateRandomString(8),
                     sdo: 'SDO' + generateRandomString(8),
-                    date1: new Date(Date.now() - i * 3600000),
-                    date2: hasSecondWeight ? new Date(Date.now() - (i-1) * 3600000) : '',
+                    date1: new Date(Date.now() - i * 3600000 * 24), // Spread dates over days
+                    date2: hasSecondWeight ? new Date(Date.now() - (i-1) * 3600000 * 24) : '',
                     weight1: firstWeight,
                     weight2: secondWeight,
                     netWeight: netWeight,
@@ -451,6 +483,23 @@
             }
             currentViewData = allData;
         };
+        
+        // Function to set default dates
+        const setDefaultDates = () => {
+            const now = new Date();
+            const weekAgo = new Date();
+            weekAgo.setDate(now.getDate() - 7);
+            
+            const toLocalISOString = (date) => {
+                const tzoffset = (new Date()).getTimezoneOffset() * 60000; //offset in milliseconds
+                const localISOTime = (new Date(date - tzoffset)).toISOString().slice(0, -1);
+                return localISOTime.substring(0, 16);
+            };
+
+            document.getElementById('search-date-to').value = toLocalISOString(now);
+            document.getElementById('search-date-from').value = toLocalISOString(weekAgo);
+        };
+
 
         // Render a specific page of the table
         const renderTablePage = (page, data) => {
@@ -483,7 +532,7 @@
                 dataGridBody.appendChild(row);
             });
 
-            const totalPages = Math.ceil(data.length / rowsPerPage);
+            const totalPages = Math.ceil(data.length / rowsPerPage) || 1;
             pageInfo.textContent = `Page ${page} of ${totalPages}`;
             prevPageButton.disabled = page === 1;
             nextPageButton.disabled = page === totalPages;
@@ -610,11 +659,14 @@
             if (secondWeight.trim() !== '') {
                 showModal('Unable to cancel job with a 2nd weight.', 'error');
             } else {
-                showModal('The Transaction is cancelled successfully.', 'success');
-                const transactionNo = selectedRow.cells[2].textContent;
-                allData = allData.filter(item => item.transactionNo !== transactionNo);
-                renderTablePage(currentPage, allData);
-                selectedRow = null;
+                showModal('Are you sure to cancel the job?', 'confirm', () => {
+                    const transactionNo = selectedRow.cells[2].textContent;
+                    allData = allData.filter(item => item.transactionNo !== transactionNo);
+                    renderTablePage(currentPage, allData);
+                    selectedRow = null;
+                    // Show success message after cancellation
+                    setTimeout(() => showModal('The Transaction is cancelled successfully.', 'success'), 100);
+                });
             }
         });
         
